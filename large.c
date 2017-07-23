@@ -1,5 +1,5 @@
 #include<stdio.h>
-void main()
+int main()
 {
 int a,b,c;
 printf("Enter the three numbers");
@@ -16,4 +16,6 @@ else
 {
 printf("c is large");
 }
+  return 0;
+
 }
