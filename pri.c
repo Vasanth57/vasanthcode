@@ -1,22 +1,22 @@
 #include<stdio.h>
 int main()
 {
-int i,a,b,flag;
-scanf("%d%d",&a,&b);
-while(a<b)
+int i,v,t,flag;
+scanf("%d%d",&v,&t);
+while(v<t)
 {
 flag=0;
-for(i=2;i<=a/2;i++)
+for(i=2;i<=v/2;i++)
 {
-if(a%i==0)
+if(v%i==0)
 {
 flag=1;
 break;
 }
 }
 if(flag==0)
-printf("%d\t",a);
-++a;
+printf("%d\t",v);
+++v;
 }
 return 0;
 }
