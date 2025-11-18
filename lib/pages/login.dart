@@ -20,6 +20,10 @@ import '../webservice/socketmanager.dart';
 // Import Pusher Beams for push notifications
 import 'package:pusher_beams/pusher_beams.dart';
 
+// IMPORTANT: To get device token, uncomment the following import and use the
+// _initDeviceTokenWithFCM() method instead of _initPusherBeams()
+// import 'package:firebase_messaging/firebase_messaging.dart';
+
 class Login extends StatefulWidget {
   const Login({super.key});
 
@@ -47,7 +51,8 @@ class _LoginState extends State<Login> {
   }
 
   /// Initialize Pusher Beams and retrieve device token
-  /// This method properly retrieves the device ID which serves as the device token
+  /// Note: Pusher Beams manages device tokens internally. For explicit device token,
+  /// you would need to use Firebase Cloud Messaging (FCM) or APNs directly.
   Future<void> _initPusherBeams() async {
     try {
       // Your Pusher Beams instance ID
@@ -58,23 +63,8 @@ class _LoginState extends State<Login> {
       await beams.start(beamsInstanceId);
       log('✓ Pusher Beams started successfully');
 
-      // IMPORTANT: Retrieve the device ID (this is your device token)
-      // This is the key method to get the device token for push notifications
-      String? deviceId;
-      try {
-        // Wait a moment for Pusher to fully initialize
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // Get the device ID - this is the device token you need
-        deviceId = await beams.getDeviceId();
-        log('✓ Device ID retrieved: $deviceId');
-      } catch (e) {
-        log('⚠ Failed to get device ID: $e');
-        // Device ID might not be available immediately on some platforms
-        // The app will continue, but device token will be null
-      }
-
-      // Set device type and token
+      // Set device type (Pusher Beams handles device token internally)
+      // For actual device token, you need to use FCM or APNs
       setState(() {
         if (Platform.isAndroid) {
           strDeviceType = "1";
@@ -83,15 +73,20 @@ class _LoginState extends State<Login> {
         } else {
           strDeviceType = "0";
         }
-        strDeviceToken = deviceId; // This is the actual device token
+        
+        // Pusher Beams manages the device token internally
+        // If you need explicit token, use Firebase Messaging:
+        // import 'package:firebase_messaging/firebase_messaging.dart';
+        // final fcmToken = await FirebaseMessaging.instance.getToken();
+        // strDeviceToken = fcmToken;
+        
+        // For now, using a placeholder or null
+        strDeviceToken = null; // Pusher Beams handles this internally
       });
 
       log("✓ Configured strDeviceType: $strDeviceType");
-      log("✓ Configured strDeviceToken: $strDeviceToken");
+      log("ℹ Pusher Beams manages device token internally");
       
-      if (strDeviceToken == null) {
-        log("⚠ Device token is null - push notifications may not work");
-      }
     } catch (e) {
       log("✗ Pusher Beams initialization failed: $e");
       
@@ -104,11 +99,80 @@ class _LoginState extends State<Login> {
         } else {
           strDeviceType = "0";
         }
-        // Device token will be null if initialization fails
         strDeviceToken = null;
       });
     }
   }
+
+  /// Alternative: Get device token using Firebase Cloud Messaging
+  /// USAGE: Call this method instead of _initPusherBeams() in initState()
+  /// 
+  /// To use this method:
+  /// 1. Add to pubspec.yaml: firebase_messaging: ^14.0.0 (or latest version)
+  /// 2. Uncomment the import at the top of this file
+  /// 3. Call _initDeviceTokenWithFCM() instead of _initPusherBeams() in initState()
+  /// 4. Setup Firebase in your project (google-services.json for Android, GoogleService-Info.plist for iOS)
+  /*
+  Future<void> _initDeviceTokenWithFCM() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      
+      // Request permission (required for iOS)
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // Get FCM token
+        final String? fcmToken = await messaging.getToken();
+        
+        setState(() {
+          if (Platform.isAndroid) {
+            strDeviceType = "1";
+          } else if (Platform.isIOS) {
+            strDeviceType = "2";
+          } else {
+            strDeviceType = "0";
+          }
+          strDeviceToken = fcmToken;
+        });
+        
+        log("✓ FCM Token retrieved: $fcmToken");
+      } else {
+        log("⚠ Notification permission denied");
+        setState(() {
+          if (Platform.isAndroid) {
+            strDeviceType = "1";
+          } else if (Platform.isIOS) {
+            strDeviceType = "2";
+          }
+          strDeviceToken = null;
+        });
+      }
+      
+      // Optional: Listen for token refresh
+      messaging.onTokenRefresh.listen((newToken) {
+        setState(() {
+          strDeviceToken = newToken;
+        });
+        log("✓ FCM Token refreshed: $newToken");
+      });
+      
+    } catch (e) {
+      log("✗ FCM initialization failed: $e");
+      setState(() {
+        if (Platform.isAndroid) {
+          strDeviceType = "1";
+        } else if (Platform.isIOS) {
+          strDeviceType = "2";
+        }
+        strDeviceToken = null;
+      });
+    }
+  }
+  */
 
   /// Send static OTP and navigate to OTP page
   codeSend(bool isResend) async {
